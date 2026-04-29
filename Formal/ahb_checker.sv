@@ -95,5 +95,30 @@ module ahb_checker (
 
 
 
+  // ------------------------------------------------------
+  // 6. ASSERTION 6: End-to-End Data Integrity
+  // Ensures data written to an address is correctly read back later
+  // ------------------------------------------------------
+  property p_data_integrity;
+    logic [15:0] l_addr;
+    logic [31:0] l_data;
+
+    // Capture write
+    ( $past(HSEL && HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) && HREADY,
+      l_addr = $past(HADDR),
+      l_data = HWDATA )
+    |=> 
+    // Check read later
+    s_eventually (
+      $past(HSEL && !HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) &&
+      ($past(HADDR) == l_addr) && HREADY
+      |-> (HRDATA == l_data)
+    );
+  endproperty
+
+  assert property (p_data_integrity)
+    $display("PASS (_assert_6): Data integrity maintained.")
+  else
+    $error("FAIL (_assert_6): Data mismatch between write and read!");
 
 endmodule
