@@ -1,0 +1,82 @@
+xrun: 23.09-s013: (c) Copyright 1995-2024 Cadence Design Systems, Inc.
+TOOL:	xrun	23.09-s013: Started on Apr 29, 2026 at 06:45:55 PKT
+xrun
+	-sv
+	-f runme.f
+		ahb3lite_pkg.sv
+		ahb_if.sv
+		mem.sv
+		design.sv
+		testbench_top.sv
+		directed_tests.sv
+	-access +rwc
+Recompiling... reason: file './directed_tests.sv' is newer than expected.
+	expected: Wed Apr 29 06:45:04 2026
+	actual:   Wed Apr 29 06:45:53 2026
+file: ahb_if.sv
+      default input #1step output #1step; //THROWS WARNING.
+                                       |
+xmvlog: *W,SAWSTP (ahb_if.sv,29|39): Time unit "step" seen in literal - using local precision.
+file: directed_tests.sv
+	program worklib.directed_tests:sv
+		errors: 0, warnings: 0
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+	Top level design units:
+		ahb3lite_pkg
+		tb_top
+	Building instance overlay tables: .................... Done
+	Generating native compiled code:
+		worklib.directed_tests:sv <0x1d03eb71>
+			streams:   4, words: 16405
+	Building instance specific data structures.
+	Loading native compiled code:     .................... Done
+	Design hierarchy summary:
+		                 Instances  Unique
+		Modules:                 3       3
+		Interfaces:              1       1
+		Programs:                1       1
+		Verilog packages:        1       1
+		Registers:              64      64
+		Scalar wires:           14       -
+		Vectored wires:         14       -
+		Always blocks:          14      12
+		Initial blocks:          4       4
+		Clocking blocks:         1       1
+		Clocking items:         11      11
+		Cont. assignments:       6       7
+		Pseudo assignments:     18       -
+		Process Clocks:         11       2
+		Simulation timescale:  1ns
+	Writing initial simulation snapshot: worklib.tb_top:sv
+Loading snapshot worklib.tb_top:sv .................... Done
+xcelium> source /mnt/cadence_tools/installs/XCELIUM2309/tools/xcelium/files/xmsimrc
+xcelium> run
+
+------------------- WRITE -------------------
+[45] Addr = 0x0010 | Size = BYTE | Data = 0x000000aa
+PASS
+
+------------------- WRITE -------------------
+[85] Addr = 0x0020 | Size = HALFWORD | Data = 0x0000aabb
+PASS
+
+------------------- WRITE -------------------
+[125] Addr = 0x0030 | Size = WORD | Data = 0xaabbccdd
+PASS
+
+------------------- READ -------------------
+[175] Addr=0x0010 | Size=BYTE | Read=0xxxxxxxaa | Exp=0x000000aa
+PASS
+
+------------------- READ -------------------
+[225] Addr=0x0020 | Size=HALFWORD | Read=0xxxxxaabb | Exp=0x0000aabb
+PASS
+
+------------------- READ -------------------
+[275] Addr=0x0030 | Size=WORD | Read=0xaabbccdd | Exp=0xaabbccdd
+PASS
+Simulation complete via $finish(1) at time 365 NS + 3
+./directed_tests.sv:18    $finish;
+xcelium> exit
+TOOL:	xrun	23.09-s013: Exiting on Apr 29, 2026 at 06:45:56 PKT  (total: 00:00:01)
