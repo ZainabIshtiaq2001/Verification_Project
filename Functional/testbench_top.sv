@@ -1,13 +1,20 @@
 `timescale 1ns/1ns
-module tb_top;
+module testbench_top;
 
    // ---------------- INTERFACE ----------------
    ahb_if ahb();
-
+   
+   // ---------------- COVERAGE MODULE ----------------
+   coverage_module cov_inst (
+   .HCLK(ahb.HCLK),
+   .HRESETn(ahb.HRESETn),
+   .bus1(ahb.master)
+   );
+   
    // ---------------- CLOCK ----------------
    initial begin
       ahb.HCLK = 0;
-      forever #5 ahb.HCLK = ~ahb.HCLK; // 10ns period
+      forever #5 ahb.HCLK = ~ahb.HCLK;
    end
 
    // ---------------- RESET ----------------
@@ -22,11 +29,13 @@ module tb_top;
         ahb.HSEL   = 0;
         ahb.HADDR  = 0;
         ahb.HWRITE = 0;
-        ahb.HTRANS = 2'b00; // IDLE
+        ahb.HTRANS = 2'b00;
         ahb.HSIZE  = 0;
         ahb.HBURST = 0;
         ahb.HWDATA = 0;
+        ahb.HPROT  = 0;              // ← ADD THIS
    end
+   
    // ---------------- CONNECT READY ----------------
    assign ahb.HREADY = ahb.HREADYOUT;
 
@@ -41,7 +50,7 @@ module tb_top;
       .HWRITE    (ahb.HWRITE),
       .HSIZE     (ahb.HSIZE),
       .HBURST    (ahb.HBURST),
-      .HPROT     (4'b0),           // ignored
+      .HPROT     (ahb.HPROT),       // ← FIX: Connect from interface instead of hardcoding
       .HTRANS    (ahb.HTRANS),
       .HREADYOUT (ahb.HREADYOUT),
       .HREADY    (ahb.HREADY),
@@ -49,7 +58,5 @@ module tb_top;
    );
 
    directed_tests dt(ahb);
-   // if error try 
-   //program directed_tests(ahb_if ahb);
 
 endmodule

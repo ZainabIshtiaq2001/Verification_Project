@@ -1,6 +1,6 @@
 `timescale 1ns/1ns
 interface ahb_if #(
-    parameter ADDR_W=16, DATA_W=32 //this is from design file HADDR_SIZE and HDATA_SIZE
+    parameter ADDR_W=16, DATA_W=32
     ) ();
 
 // ---------------- CLOCK & RESET ----------------
@@ -8,44 +8,43 @@ interface ahb_if #(
    logic HRESETn;
 
 // ---------------- MASTER → SLAVE ----------------
-   logic                  HSEL; //decoder signal. HSEL 1 is for 1 slave.
+   logic                  HSEL;
    logic [ADDR_W-1:0]     HADDR;
-   logic                  HWRITE; //1 for write, 0 for read
+   logic                  HWRITE;
    logic [2:0]            HSIZE;
-   logic [2:0]            HBURST; // 3 bits for 8 burst types: SINGLE, INCR, WRAP4, INCR4, WRAP8, INCR8, WRAP16, INCR16
-   logic [1:0]            HTRANS; //2 width for the 4 states: IDLE, BUSY, NONSEQ, SEQ   
-   logic [DATA_W-1:0]     HWDATA; //MAIN TRANSFER DATA BUS
+   logic [2:0]            HBURST;
+   logic [1:0]            HTRANS;
+   logic [DATA_W-1:0]     HWDATA;
+   logic [3:0]            HPROT;        // ← ADD THIS
 
 // ---------------- SLAVE → MASTER ----------------
-   logic [DATA_W-1:0]     HRDATA; // trasnfers data from slave to master
-   logic                  HREADYOUT; // 1 = transfer completes, 0 = wait state inserted    
-   logic                  HRESP; // 0 for OKAY, 1 for ERROR
+   logic [DATA_W-1:0]     HRDATA;
+   logic                  HREADYOUT;
+   logic                  HRESP;
 
 // ---------------- SHARED ----------------
-   logic                  HREADY;   // driven from HREADYOUT in TB
+   logic                  HREADY;
 
 // ---------------- CLOCKING BLOCK ----------------
    clocking cb @(posedge HCLK);
-      default input #1step output #1step; //THROWS WARNING.
+      default input #1step output #1step;
 
-      output HSEL, HADDR, HWRITE, HSIZE, HBURST, HTRANS, HWDATA;
+      output HSEL, HADDR, HWRITE, HSIZE, HBURST, HTRANS, HWDATA, HPROT;  // ← ADD HPROT
       input  HRDATA, HREADYOUT, HRESP;
       input  HREADY;
    endclocking
    
-   // ---------------- MODPORTS ----------------
+// ---------------- MODPORTS ----------------
    modport master (
       clocking cb,
-      output HSEL, HADDR, HWRITE, HSIZE, HBURST, HTRANS, HWDATA,
+      output HSEL, HADDR, HWRITE, HSIZE, HBURST, HTRANS, HWDATA, HPROT,  // ← ADD HPROT
       input  HCLK, HRESETn, HRDATA, HREADYOUT, HRESP, HREADY
-      
-   ); //refer to figure 1-2 Manager interface from specs
+   );
 
    modport slave (
-      
-      input  HCLK, HRESETn, HSEL, HADDR, HWRITE, HSIZE, HBURST, HTRANS, HWDATA,
+      input  HCLK, HRESETn, HSEL, HADDR, HWRITE, HSIZE, HBURST, HTRANS, HWDATA, HPROT,  // ← ADD HPROT
       output HRDATA, HREADYOUT, HRESP,
-      input  HREADY //from the testbench
-   ); //refer to figure 1-3 Subordinate interface from specs
+      input  HREADY
+   );
 
 endinterface
