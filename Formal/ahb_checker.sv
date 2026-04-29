@@ -17,108 +17,229 @@ module ahb_checker (
   default clocking cb @(posedge HCLK); endclocking
   default disable iff (!HRESETn);
 
+
+
   // ------------------------------------------------------
-  // 1. ASSERTION 1: Reset Behavior (Immediate)
-  // Ensures slave outputs are correctly initialized on reset
+  // 1. PROTOCOL: Reset Behavior (Immediate)
   // ------------------------------------------------------
   property p_reset;
     !HRESETn |-> (HREADYOUT == 1'b1 && HRESP == 1'b0);
   endproperty
-
+  
   assert property (p_reset)
-    $display("PASS (_assert_1): Reset behavior is correct.")
-  else
-    $error("FAIL (_assert_1): Incorrect reset values on HREADYOUT or HRESP!");
+    $info("PASS: Reset behavior is perfectly compliant.");
+  else 
+    $error("FAIL: Reset behavior violated! HREADYOUT or HRESP stuck.");
+
 
 
 
   // ------------------------------------------------------
-  // 2. ASSERTION 2: Response Validity
-  // Ensures HRESP always stays within legal values (OKAY)
+  // 2. PROTOCOL: HRESP Constant OKAY
   // ------------------------------------------------------
   property p_hresp_ok;
     HRESP == 1'b0;
   endproperty
-
+  
   assert property (p_hresp_ok)
-    $display("PASS (_assert_2): HRESP is always valid (OKAY).")
-  else
-    $error("FAIL (_assert_2): Invalid HRESP detected!");
+    $info("PASS: HRESP is successfully held OKAY.");
+  else 
+    $error("FAIL: Protocol violation! HRESP transitioned to ERROR state.");
+
+
 
 
 
   // ------------------------------------------------------
-  // 3. ASSERTION 3: Signal Stability (No X/Z)
-  // Ensures no unknown values propagate to outputs
+  // 3. PROTOCOL: No X Propagation
   // ------------------------------------------------------
   property p_no_x;
     !$isunknown(HREADYOUT) && !$isunknown(HRESP);
   endproperty
-
+  
   assert property (p_no_x)
-    $display("PASS (_assert_3): No unknown values on outputs.")
-  else
-    $error("FAIL (_assert_3): X/Z detected on outputs!");
+    $info("PASS: No X (unknown) values detected on slave outputs.");
+  else 
+    $error("FAIL: X value propagated to HREADYOUT or HRESP!");
 
-
-
+  
+  
+  
+  
+  
   // ------------------------------------------------------
-  // 4. ASSERTION 4: Valid Wait-State Start
-  // Ensures HREADYOUT is pulled low ONLY after a valid address phase
-  // (HSEL=1, valid HTRANS, AND HREADY=1 in previous cycle)
+  // 4. PROTOCOL: Valid Wait State Initiation
   // ------------------------------------------------------
+  // Intent: A slave can only pull HREADYOUT low if it actually 
+  // accepted a valid address phase in the PREVIOUS cycle.
   property p_valid_wait_state_start;
     $fell(HREADYOUT) |-> $past(HSEL && HTRANS inside {2'b10, 2'b11} && HREADY);
   endproperty
-
+  
   assert property (p_valid_wait_state_start)
-    $display("PASS (_assert_4): Wait state started correctly.")
-  else
-    $error("FAIL (_assert_4): HREADYOUT dropped without valid prior address phase!");
+    $info("PASS: Wait state initiated legally after valid address phase.");
+  else 
+    $error("FAIL: HREADYOUT dropped without a valid prior address phase!");
+
+
 
 
 
   // ------------------------------------------------------
-  // 5. ASSERTION 5: Wait-State Requirement for SEQ Reads
-  // Ensures every SEQ read inserts at least one wait state
-  // (Required for 2-cycle memory latency)
+  // 5. PROTOCOL: Burst Read Wait State Timing
   // ------------------------------------------------------
+  // Intent: Every read data phase (NONSEQ or SEQ) must contain 
+  // at least one wait state (HREADYOUT == 0) to allow data to propagate.
   property p_seq_read_wait;
-    (HSEL && !HWRITE && HTRANS == 2'b11 && HREADY)
-    |=> (HREADYOUT == 1'b0);
+    (HSEL && !HWRITE && HTRANS == 2'b11 && HREADY) |=> (HREADYOUT == 1'b0);
   endproperty
-
+  
   assert property (p_seq_read_wait)
-    $display("PASS (_assert_5): Wait state inserted for SEQ read.")
-  else
-    $error("FAIL (_assert_5): Missing wait state for SEQ read!");
-
-
+    $info("PASS: Wait state correctly inserted for SEQ read.");
+  else 
+    $error("FAIL: Protocol Violation! Slave failed to insert wait state for a SEQ read.");
 
   // ------------------------------------------------------
-  // 6. ASSERTION 6: End-to-End Data Integrity
-  // Ensures data written to an address is correctly read back later
+  // 6. FUNCTIONAL: End-to-End Data Integrity
   // ------------------------------------------------------
   property p_data_integrity;
     logic [15:0] l_addr;
     logic [31:0] l_data;
-
-    // Capture write
-    ( $past(HSEL && HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) && HREADY,
-      l_addr = $past(HADDR),
-      l_data = HWDATA )
+    
+    // Trigger: A valid write data phase completes
+    ( $past(HSEL && HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) && HREADY, 
+      l_addr = $past(HADDR), 
+      l_data = HWDATA ) 
     |=> 
-    // Check read later
+    // Consequence: The next time we read from this address, data must match.
     s_eventually (
-      $past(HSEL && !HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) &&
-      ($past(HADDR) == l_addr) && HREADY
+      $past(HSEL && !HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) && ($past(HADDR) == l_addr) && HREADY 
+      |-> (HRDATA == l_data)
+    );
+
+
+  endproperty
+
+
+  
+  assert property (p_data_integrity)
+    $info("PASS: Data successfully written and read back with perfect integrity.");
+  else 
+    $error("FAIL: Functional Violation! Data read did not match data written.");
+
+
+
+
+
+
+
+  // ------------------------------------------------------
+  // 7. PROTOCOL: Address Alignment
+  // ------------------------------------------------------
+  property p_addr_alignment;
+    (HSEL && HTRANS inside {2'b10, 2'b11}) |-> 
+      ((HSIZE == 3'b001) ? (HADDR[0] == 1'b0) : 1'b1) &&
+      ((HSIZE == 3'b010) ? (HADDR[1:0] == 2'b00) : 1'b1);
+  endproperty
+
+  assert property (p_addr_alignment)
+    $info("PASS: Address is properly aligned to HSIZE.");
+  else 
+    $error("FAIL: Unaligned address detected during active transfer!");
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  // ------------------------------------------------------
+  // 8. PROTOCOL: Signal Stability during Wait States
+  // ------------------------------------------------------
+  property p_hready_hold;
+    (!$past(HREADY) && $past(HSEL) && ($past(HTRANS) inside {2'b10, 2'b11})) |-> 
+      ($stable(HADDR) && $stable(HTRANS) && $stable(HWRITE) && $stable(HSIZE) && $stable(HBURST));
+  endproperty
+
+  assert property (p_hready_hold)
+    $info("PASS: Signals held stable during wait state.");
+  else 
+    $error("FAIL: Protocol Violation! Signals changed while HREADY was low.");
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  // ------------------------------------------------------
+  // 9. FUNCTIONAL: Reset Recovery
+  // ------------------------------------------------------
+  property p_reset_recovery;
+    $rose(HRESETn) |-> ##[0:10] (HREADYOUT == 1'b1 && HRESP == 1'b0);
+  endproperty
+
+  assert property (p_reset_recovery)
+    $info("PASS: Slave successfully recovered from reset.");
+  else 
+    $error("FAIL: Slave deadlocked after reset release!");
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  // ------------------------------------------------------
+  // 10. FUNCTIONAL: Memory Stability (No Spontaneous Changes)
+  // ------------------------------------------------------
+  property p_read_read_stability;
+    logic [15:0] l_addr;
+    logic [31:0] l_data;
+    
+    // Trigger: First Read completes successfully
+    ( $past(HSEL && !HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) && HREADY, 
+      l_addr = $past(HADDR), 
+      l_data = HRDATA ) 
+    |=> 
+    // Check: The next time this address is read, assuming no intervening writes, data matches
+    s_eventually (
+      $past(HSEL && !HWRITE && HTRANS inside {2'b10, 2'b11} && HREADY) && ($past(HADDR) == l_addr) && HREADY 
       |-> (HRDATA == l_data)
     );
   endproperty
 
-  assert property (p_data_integrity)
-    $display("PASS (_assert_6): Data integrity maintained.")
-  else
-    $error("FAIL (_assert_6): Data mismatch between write and read!");
+  assert property (p_read_read_stability)
+    $info("PASS: Memory content remained stable between reads.");
+  else 
+    $error("FAIL: Memory content changed without a valid write transaction.");
+
+
+
+
+
+  // ------------------------------------------------------
+  // 11. PROTOCOL: Two-Cycle ERROR Response
+  // ------------------------------------------------------
+  property p_two_cycle_error;
+    (HRESP == 1'b1 && HREADYOUT == 1'b0) |=> (HRESP == 1'b1 && HREADYOUT == 1'b1);
+  endproperty
+
+  assert property (p_two_cycle_error)
+    $info("PASS: 2-cycle ERROR response executed correctly.");
+  else 
+    $error("FAIL: ERROR response did not follow the strict 2-cycle timing requirement!");
 
 endmodule
