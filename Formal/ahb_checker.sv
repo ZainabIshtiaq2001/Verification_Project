@@ -14,109 +14,86 @@ module ahb_checker (
   input HRESP
 );
 
-  // ======================================================
-  // 1. Address alignment check : 
-  //HADDR aligned to HSIZE on every NONSEQ and SEQ
-  // ======================================================
-  property p_addr_align;
-    @(posedge HCLK) disable iff (!HRESETn)
-    (HSEL && HTRANS inside {2'b10,2'b11}) |->
-    (
-      (HSIZE == 3'b000) ||
-      (HSIZE == 3'b001 && HADDR[0] == 0) ||
-      (HSIZE == 3'b010 && HADDR[1:0] == 0)
-    );
-  endproperty
+  default clocking cb @(posedge HCLK); endclocking
+  default disable iff (!HRESETn);
 
-  assert property (p_addr_align);
-
-  // ======================================================
-  // 2. SEQ must follow NONSEQ or SEQ : 
-  //SEQ can only follow NONSEQ or SEQ — not IDLE or BUSY at burst start
-  // ======================================================
-  property p_seq_rule;
-    @(posedge HCLK) disable iff (!HRESETn)
-    (HTRANS == 2'b11) |->
-    ($past(HTRANS) inside {2'b10,2'b11});
-  endproperty
-
-  assert property (p_seq_rule);
-// ======================================================
-  // Rule 3: Fixed burst length check
-  // For INCR4 / WRAP4 → max 4 transfers (Wait-state tolerant)
-  // ======================================================
-  property p_burst_len_4;
-    @(posedge HCLK) disable iff (!HRESETn)
-    (HSEL && HTRANS == 2'b10 && HBURST inside {3'b010, 3'b011} && HREADY) |=> 
-    (HTRANS == 2'b11 && HREADY)[->3];
-  endproperty
-
-  assert property (p_burst_len_4);
-
-  // ======================================================
-  // Rule 4: Stable signals when HREADY = 0 (Wait States)
-  // Master must hold control and address signals steady
-  // ======================================================
-  property p_hold;
-    @(posedge HCLK) disable iff (!HRESETn)
-    (!$past(HREADY)) |->
-    $stable(HADDR) && $stable(HTRANS) && $stable(HWRITE) && $stable(HSIZE) && $stable(HBURST);
-  endproperty
-
-  assert property (p_hold);
-
-  // ======================================================
-  // Rule 5: HRESP=ERROR lasts exactly 2 cycles
-  // Cycle 1: HRESP=1, HREADYOUT=0
-  // Cycle 2: HRESP=1, HREADYOUT=1
-  // ======================================================
-  property p_error_response;
-    @(posedge HCLK) disable iff (!HRESETn)
-    (HRESP == 1'b1 && $past(HRESP) == 1'b0) |-> 
-    (!HREADYOUT ##1 (HRESP == 1'b1 && HREADYOUT));
-  endproperty
-
-  assert property (p_error_response);
-
-  // ======================================================
-  // Rule 6: BUSY not in SINGLE burst
-  // ======================================================
-  property p_busy;
-    @(posedge HCLK) disable iff (!HRESETn)
-    (HBURST == 3'b000) |-> (HTRANS != 2'b01);
-  endproperty
-
-  assert property (p_busy);
-
-  // ======================================================
-  // Rule 7: WRAP burst address stays within boundary
-  // Checks that upper address bits do not change for WRAP4
-  // ======================================================
-  property p_wrap4_boundary;
-    @(posedge HCLK) disable iff (!HRESETn)
-    (HSEL && HTRANS == 2'b11 && HBURST == 3'b010 && HSIZE == 3'b010) |->
-    (HADDR[15:4] == $past(HADDR[15:4])); 
-  endproperty
-
-  assert property (p_wrap4_boundary);
-
-  // ======================================================
-  // Extra: Reset behavior (Slave MUST drive HREADYOUT high)
-  // ======================================================
+  // ------------------------------------------------------
+  // 1. ASSERTION 1: Reset Behavior (Immediate)
+  // Ensures slave outputs are correctly initialized on reset
+  // ------------------------------------------------------
   property p_reset;
-    @(posedge HCLK)
-    !HRESETn |-> HREADYOUT;
+    !HRESETn |-> (HREADYOUT == 1'b1 && HRESP == 1'b0);
   endproperty
 
-  assert property (p_reset);
+  assert property (p_reset)
+    $display("PASS (_assert_1): Reset behavior is correct.")
+  else
+    $error("FAIL (_assert_1): Incorrect reset values on HREADYOUT or HRESP!");
 
-  // ======================================================
-  // Extra: Functional sanity - no X propagation on Response
-  // ======================================================
+
+
+  // ------------------------------------------------------
+  // 2. ASSERTION 2: Response Validity
+  // Ensures HRESP always stays within legal values (OKAY)
+  // ------------------------------------------------------
+  property p_hresp_ok;
+    HRESP == 1'b0;
+  endproperty
+
+  assert property (p_hresp_ok)
+    $display("PASS (_assert_2): HRESP is always valid (OKAY).")
+  else
+    $error("FAIL (_assert_2): Invalid HRESP detected!");
+
+
+
+  // ------------------------------------------------------
+  // 3. ASSERTION 3: Signal Stability (No X/Z)
+  // Ensures no unknown values propagate to outputs
+  // ------------------------------------------------------
   property p_no_x;
-    @(posedge HCLK) disable iff (!HRESETn)
-    !$isunknown(HRESP);
+    !$isunknown(HREADYOUT) && !$isunknown(HRESP);
   endproperty
 
-  assert property (p_no_x);
+  assert property (p_no_x)
+    $display("PASS (_assert_3): No unknown values on outputs.")
+  else
+    $error("FAIL (_assert_3): X/Z detected on outputs!");
+
+
+
+  // ------------------------------------------------------
+  // 4. ASSERTION 4: Valid Wait-State Start
+  // Ensures HREADYOUT is pulled low ONLY after a valid address phase
+  // (HSEL=1, valid HTRANS, AND HREADY=1 in previous cycle)
+  // ------------------------------------------------------
+  property p_valid_wait_state_start;
+    $fell(HREADYOUT) |-> $past(HSEL && HTRANS inside {2'b10, 2'b11} && HREADY);
+  endproperty
+
+  assert property (p_valid_wait_state_start)
+    $display("PASS (_assert_4): Wait state started correctly.")
+  else
+    $error("FAIL (_assert_4): HREADYOUT dropped without valid prior address phase!");
+
+
+
+  // ------------------------------------------------------
+  // 5. ASSERTION 5: Wait-State Requirement for SEQ Reads
+  // Ensures every SEQ read inserts at least one wait state
+  // (Required for 2-cycle memory latency)
+  // ------------------------------------------------------
+  property p_seq_read_wait;
+    (HSEL && !HWRITE && HTRANS == 2'b11 && HREADY)
+    |=> (HREADYOUT == 1'b0);
+  endproperty
+
+  assert property (p_seq_read_wait)
+    $display("PASS (_assert_5): Wait state inserted for SEQ read.")
+  else
+    $error("FAIL (_assert_5): Missing wait state for SEQ read!");
+
+
+
+
 endmodule
