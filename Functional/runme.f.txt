@@ -1,0 +1,6 @@
+ahb3lite_pkg.sv
+ahb_if.sv
+mem.sv
+design.sv
+tb_top.sv
+directed_tests.sv
