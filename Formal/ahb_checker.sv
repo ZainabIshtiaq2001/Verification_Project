@@ -242,4 +242,18 @@ module ahb_checker (
   else 
     $error("FAIL: ERROR response did not follow the strict 2-cycle timing requirement!");
 
+    // ------------------------------------------------------
+  //  Burst Read Wait State Timing (RAM Latency)
+  // Intent: Checks if the specific RAM architecture requires at least 1 wait state for reads.
+  // ------------------------------------------------------
+  property p_seq_read_wait;
+    (HSEL && !HWRITE && HTRANS == 2'b11 && HREADY) |=> (HREADYOUT == 1'b0);
+  endproperty
+  
+  assert property (p_seq_read_wait)
+    $info("PASS: Wait state correctly inserted for SEQ read.");
+  else 
+    $error("FAIL: Protocol Violation! Slave failed to insert wait state for a SEQ read.");
+
+
 endmodule
