@@ -130,9 +130,9 @@ module ahb_checker (
   // Requirement: These check the RAM itself, not the protocol.
   // ============================================================
   
-  // // Symbolic address to prevent formal state-space explosion
-  // wire [15:0] f_addr;
-  // assume property ($stable(f_addr));
+  // Symbolic address to prevent formal state-space explosion
+  wire [15:0] f_addr;
+  assume property ($stable(f_addr));
 
   // Pipeline Tracking Registers
   logic       trk_active;
