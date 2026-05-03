@@ -1,0 +1,78 @@
+# ----------------------------------------
+# Jasper Version Info
+# tool      : Jasper 2025.06
+# platform  : Linux 3.10.0-1160.119.1.el7.x86_64
+# version   : 2025.06p002 64 bits
+# build date: 2025.08.26 14:59:20 UTC
+# ----------------------------------------
+# started   : 2026-05-01 22:46:55 PKT
+# hostname  : pc9.(none)
+# pid       : 27644
+# arguments : '-style' 'windows' '-label' 'session_0' '-console' '//127.0.0.1:41686' '-data' 'AAAAfHicY2RgYLCp////PwMYMD6A0Aw2jAyoAMRnQhUJbEChGRhYUZVLMaQxFDCUMcQzFDOkMpQwlAJ5ekA6mSEHrAYA9BgL7A==' '-bridge_url' '10.103.77.38:41202' '-proj' '/home/Abid.Hussain/verification/3.AHB-Lite-project/scripts/jgproject/sessionLogs/session_0' '-init' '-hidden' '/home/Abid.Hussain/verification/3.AHB-Lite-project/scripts/jgproject/.tmp/.initCmds.tcl' 'fpv_setup.tcl'
+
+Any disclosure about the Cadence Design Systems software or its use
+model to any third party violates the written Non-Disclosure Agreement
+between Cadence Design Systems, Inc. and the customer.
+
+THIS SOFTWARE CONTAINS CONFIDENTIAL INFORMATION AND TRADE SECRETS OF
+CADENCE DESIGN SYSTEMS, INC. USE, DISCLOSURE, OR REPRODUCTION IS
+PROHIBITED WITHOUT THE PRIOR EXPRESS WRITTEN PERMISSION OF CADENCE
+DESIGN SYSTEMS, INC.
+
+Copyright (C) 2000-2025 Cadence Design Systems, Inc. All Rights
+Reserved.  Unpublished -- rights reserved under the copyright laws of
+the United States.
+
+This product includes software developed by others and redistributed
+according to license agreement. See doc/third_party_readme.txt for
+further details.
+
+RESTRICTED RIGHTS LEGEND
+
+Use, duplication, or disclosure by the Government is subject to
+restrictions as set forth in subparagraph (c) (1) (ii) of the Rights in
+Technical Data and Computer Software clause at DFARS 252.227-7013 or
+subparagraphs (c) (1) and (2) of Commercial Computer Software -- Restricted
+Rights at 48 CFR 52.227-19, as applicable.
+
+
+                          Cadence Design Systems, Inc.
+                          2655 Seely Avenue
+                          San Jose, CA 95134
+                          Phone: 408.943.1234
+
+For technical assistance visit http://support.cadence.com.
+
+Jasper Apps Analysis Session - /home/Abid.Hussain/verification/3.AHB-Lite-project/scripts/jgproject/sessionLogs/session_0
+
+WARNING (WG017): [session]: The system's locale is "ANSI_X3.4-1968", which is not UTF-8. Non-ASCII characters might not be handled correctly.
+WARNING (WG017): [jg_console]: The system's locale is "ANSI_X3.4-1968", which is not UTF-8. Non-ASCII characters might not be handled correctly.
+INFO: successfully checked out licenses "jasper_pint" and "jasper_papp".
+INFO: reading configuration file "/home/Abid.Hussain/.config/cadence/jasper.conf".
+% # =========================================================
+% # AHB-Lite SRAM Formal Verification Setup
+% # Role B - EE5214
+% # =========================================================
+% 
+% clear -all
+INFO (IPF121): Cleared environment completely for new design analysis.
+% 
+% set ROOT [pwd]
+/home/Abid.Hussain/verification/3.AHB-Lite-project/scripts
+% 
+% set top ahb3liten
+ahb3liten
+% 
+% # -----------------------------
+% # STEP 1: PACKAGE FIRST (VERY IMPORTANT)
+% # -----------------------------
+% analyze -sv09 $ROOT/packages/ahb3lite_pkg.sv
+ERROR (ESW046): The file "/home/Abid.Hussain/verification/3.AHB-Lite-project/scripts/packages/ahb3lite_pkg.sv" does not exist.
+
+ERROR: problem encountered at line 15 in file fpv_setup.tcl
+
+INFO (IPL005): Received request to exit from the console.
+INFO (IPL014): Waiting for the Tcl-thread to exit.
+INFO (IPL018): The peak resident set memory use for this session was 0.304 GB.
+INFO (IPL015): The Tcl-thread exited with status 0.
+INFO (IPL016): Exiting the analysis session with status 0.
