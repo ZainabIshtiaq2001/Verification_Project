@@ -1,5 +1,5 @@
 xrun: 23.09-s013: (c) Copyright 1995-2024 Cadence Design Systems, Inc.
-TOOL:	xrun	23.09-s013: Started on Apr 29, 2026 at 06:45:55 PKT
+TOOL:	xrun	23.09-s013: Started on May 04, 2026 at 22:47:50 PKT
 xrun
 	-sv
 	-f runme.f
@@ -11,15 +11,18 @@ xrun
 		directed_tests.sv
 	-access +rwc
 Recompiling... reason: file './directed_tests.sv' is newer than expected.
-	expected: Wed Apr 29 06:45:04 2026
-	actual:   Wed Apr 29 06:45:53 2026
+	expected: Mon May  4 22:37:50 2026
+	actual:   Mon May  4 22:47:48 2026
 file: ahb_if.sv
       default input #1step output #1step; //THROWS WARNING.
                                        |
 xmvlog: *W,SAWSTP (ahb_if.sv,29|39): Time unit "step" seen in literal - using local precision.
 file: directed_tests.sv
+    bit wait_seen = 0;
+                  |
+xmvlog: *W,VARIST (directed_tests.sv,397|18): Local static variable with initializer requires 'static' keyword.
 	program worklib.directed_tests:sv
-		errors: 0, warnings: 0
+		errors: 0, warnings: 1
 		Caching library 'worklib' ....... Done
 	Elaborating the design hierarchy:
 	Top level design units:
@@ -27,8 +30,8 @@ file: directed_tests.sv
 		tb_top
 	Building instance overlay tables: .................... Done
 	Generating native compiled code:
-		worklib.directed_tests:sv <0x1d03eb71>
-			streams:   4, words: 16405
+		worklib.directed_tests:sv <0x0a4b0741>
+			streams:  15, words: 71640
 	Building instance specific data structures.
 	Loading native compiled code:     .................... Done
 	Design hierarchy summary:
@@ -37,11 +40,11 @@ file: directed_tests.sv
 		Interfaces:              1       1
 		Programs:                1       1
 		Verilog packages:        1       1
-		Registers:              64      64
+		Registers:             107     107
 		Scalar wires:           14       -
 		Vectored wires:         14       -
 		Always blocks:          14      12
-		Initial blocks:          4       4
+		Initial blocks:          5       5
 		Clocking blocks:         1       1
 		Clocking items:         11      11
 		Cont. assignments:       6       7
@@ -76,7 +79,163 @@ PASS
 ------------------- READ -------------------
 [275] Addr=0x0030 | Size=WORD | Read=0xaabbccdd | Exp=0xaabbccdd
 PASS
-Simulation complete via $finish(1) at time 365 NS + 3
-./directed_tests.sv:18    $finish;
+
+------------------- WAIT STATE TEST -------------------
+FAIL: No wait state observed!
+
+------------------- BURST WRITE -------------------
+[445] Type = INCR4 | Start Addr = 0x0010 | Size = WORD | Beats = 4
+PASS
+
+------------------- BURST WRITE -------------------
+[695] Type = INCR8 | Start Addr = 0x0020 | Size = WORD | Beats = 8
+PASS
+
+------------------- BURST WRITE -------------------
+[1185] Type = INCR16 | Start Addr = 0x0040 | Size = WORD | Beats = 16
+PASS
+
+------------------- BURST READ -------------------
+[1195] Type = INCR4 | Start Addr = 0x0010 | Size = WORD | Beats = 4
+[1265] Beat 0 | Addr=0x0010 | Read=0x00000011 | Exp=0x00000011
+PASS
+[1285] Beat 1 | Addr=0x0014 | Read=0x00000022 | Exp=0x00000022
+PASS
+[1305] Beat 2 | Addr=0x0018 | Read=0x00000033 | Exp=0x00000033
+PASS
+[1325] Beat 3 | Addr=0x001c | Read=0x00000044 | Exp=0x00000044
+PASS
+BURST READ DONE
+
+------------------- BURST READ -------------------
+[1335] Type = INCR8 | Start Addr = 0x0020 | Size = WORD | Beats = 8
+[1405] Beat 0 | Addr=0x0020 | Read=0x00000011 | Exp=0x00000011
+PASS
+[1425] Beat 1 | Addr=0x0024 | Read=0x00000022 | Exp=0x00000022
+PASS
+[1445] Beat 2 | Addr=0x0028 | Read=0x00000033 | Exp=0x00000033
+PASS
+[1465] Beat 3 | Addr=0x002c | Read=0x00000044 | Exp=0x00000044
+PASS
+[1485] Beat 4 | Addr=0x0030 | Read=0x00000055 | Exp=0x00000055
+PASS
+[1505] Beat 5 | Addr=0x0034 | Read=0x00000066 | Exp=0x00000066
+PASS
+[1525] Beat 6 | Addr=0x0038 | Read=0x00000077 | Exp=0x00000077
+PASS
+[1545] Beat 7 | Addr=0x003c | Read=0x00000088 | Exp=0x00000088
+PASS
+BURST READ DONE
+
+------------------- BURST READ -------------------
+[1555] Type = INCR16 | Start Addr = 0x0040 | Size = WORD | Beats = 16
+[1625] Beat 0 | Addr=0x0040 | Read=0x00000001 | Exp=0x00000001
+PASS
+[1645] Beat 1 | Addr=0x0044 | Read=0x00000002 | Exp=0x00000002
+PASS
+[1665] Beat 2 | Addr=0x0048 | Read=0x00000003 | Exp=0x00000003
+PASS
+[1685] Beat 3 | Addr=0x004c | Read=0x00000004 | Exp=0x00000004
+PASS
+[1705] Beat 4 | Addr=0x0050 | Read=0x00000005 | Exp=0x00000005
+PASS
+[1725] Beat 5 | Addr=0x0054 | Read=0x00000006 | Exp=0x00000006
+PASS
+[1745] Beat 6 | Addr=0x0058 | Read=0x00000007 | Exp=0x00000007
+PASS
+[1765] Beat 7 | Addr=0x005c | Read=0x00000008 | Exp=0x00000008
+PASS
+[1785] Beat 8 | Addr=0x0060 | Read=0x00000009 | Exp=0x00000009
+PASS
+[1805] Beat 9 | Addr=0x0064 | Read=0x0000000a | Exp=0x0000000a
+PASS
+[1825] Beat 10 | Addr=0x0068 | Read=0x0000000b | Exp=0x0000000b
+PASS
+[1845] Beat 11 | Addr=0x006c | Read=0x0000000c | Exp=0x0000000c
+PASS
+[1865] Beat 12 | Addr=0x0070 | Read=0x0000000d | Exp=0x0000000d
+PASS
+[1885] Beat 13 | Addr=0x0074 | Read=0x0000000e | Exp=0x0000000e
+PASS
+[1905] Beat 14 | Addr=0x0078 | Read=0x0000000f | Exp=0x0000000f
+PASS
+[1925] Beat 15 | Addr=0x007c | Read=0x00000010 | Exp=0x00000010
+PASS
+BURST READ DONE
+   >>> WRAP OCCURRED <<<
+
+------------------- BURST WRITE -------------------
+[2055] Type = WRAP4 | Start Addr = 0x000c | Size = WORD | Beats = 4
+PASS
+
+------------------- BURST READ -------------------
+[2065] Type = WRAP4 | Start Addr = 0x000c | Size = WORD | Beats = 4
+[2135] Beat 0 | Addr=0x000c | Read=0x00000011 | Exp=0x00000011
+PASS
+   >>> WRAP OCCURRED <<<
+[2155] Beat 1 | Addr=0x0000 | Read=0x00000022 | Exp=0x00000022
+PASS
+[2175] Beat 2 | Addr=0x0004 | Read=0x00000033 | Exp=0x00000033
+PASS
+[2195] Beat 3 | Addr=0x0008 | Read=0x00000044 | Exp=0x00000044
+PASS
+BURST READ DONE
+
+------------------- NO IDLE TEST -------------------
+Checking consecutive writes...
+PASS: No-IDLE transfers successful
+
+------------------- BURST WRITE -------------------
+[2495] Type = WRAP8 | Start Addr = 0x0018 | Size = WORD | Beats = 8
+PASS
+
+------------------- BURST READ -------------------
+[2505] Type = WRAP8 | Start Addr = 0x0018 | Size = WORD | Beats = 8
+[2575] Beat 0 | Addr=0x0018 | Read=0x00000011 | Exp=0x00000011
+PASS
+[2595] Beat 1 | Addr=0x001c | Read=0x00000022 | Exp=0x00000022
+PASS
+[2615] Beat 2 | Addr=0x0000 | Read=0x00000033 | Exp=0x00000033
+PASS
+[2635] Beat 3 | Addr=0x0004 | Read=0x00000044 | Exp=0x00000044
+PASS
+[2655] Beat 4 | Addr=0x0008 | Read=0x00000055 | Exp=0x00000055
+PASS
+[2675] Beat 5 | Addr=0x000c | Read=0x00000066 | Exp=0x00000066
+PASS
+[2695] Beat 6 | Addr=0x0010 | Read=0x00000077 | Exp=0x00000077
+PASS
+[2715] Beat 7 | Addr=0x0014 | Read=0x00000088 | Exp=0x00000088
+PASS
+BURST READ DONE
+
+------------------- IDLE TEST -------------------
+PASS: No transfer during IDLE
+
+------------------- BUSY TEST -------------------
+PASS: BUSY did not initiate transfer
+
+------------------- WAIT STATE TEST -------------------
+FAIL: No wait state observed!
+
+------------------- 1KB BOUNDARY TEST -------------------
+
+------------------- BURST WRITE -------------------
+[2925] Type = INCR4 | Start Addr = 0x03fc | Size = WORD | Beats = 4
+PASS
+FAIL: Burst crossed 1KB boundary without error
+
+------------------- ALIGNMENT TEST -------------------
+
+------------------- WRITE -------------------
+[2965] Addr = 0x0004 | Size = WORD | Data = 0xdeadbeef
+PASS
+
+------------------- READ -------------------
+[3015] Addr=0x0004 | Size=WORD | Read=0xdeadbeef | Exp=0xdeadbeef
+PASS
+PASS: Aligned WORD access successful
+Simulation complete via $finish(1) at time 3105 NS + 3
+./directed_tests.sv:68    $finish;
 xcelium> exit
-TOOL:	xrun	23.09-s013: Exiting on Apr 29, 2026 at 06:45:56 PKT  (total: 00:00:01)
+TOOL:	xrun	23.09-s013: Exiting on May 04, 2026 at 22:47:51 PKT  (total: 00:00:01)
