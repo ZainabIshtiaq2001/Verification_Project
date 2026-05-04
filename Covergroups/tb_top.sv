@@ -37,15 +37,7 @@ module tb_top;
   end
 
   ahb_if ahb_bus(clk, rst_n);
-
-
-// Instantiate your coverage module
-	coverage_module ahb_cov (
-	    .HCLK(ahb_bus.HCLK),
-	    .HRESETn(ahb_bus.HRESETn),
-	    .bus1(ahb_bus) // Pass the interface here
-	);
- // assign ahb_bus.HREADY = rst_n ? ahb_bus.HREADYOUT : 1'b1;
+  assign ahb_bus.HREADY = rst_n ? ahb_bus.HREADYOUT : 1'b1;
 
   ahb3liten dut (
     .HCLK(ahb_bus.HCLK),
@@ -61,8 +53,7 @@ module tb_top;
     .HPROT(ahb_bus.HPROT),
     .HREADYOUT(ahb_bus.HREADYOUT),
     .HRESP(ahb_bus.HRESP),
-  //  .HREADY(ahb_bus.HREADY)
-    .HREADY(1'b1)
+    .HREADY(ahb_bus.HREADY)
   );
 
   function automatic void update_memory(bit [31:0] addr, bit [31:0] data, bit [3:0] be);
