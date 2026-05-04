@@ -180,7 +180,7 @@ task single_read(
     // Wait for ready
     do @(ahb.cb); while (ahb.HREADYOUT == 0);
 
-    // EXTRA cycle for memory latency (your DUT!)
+    // EXTRA cycle for memory latency
     @(ahb.cb);
     rdata = ahb.HRDATA;
 
@@ -499,7 +499,7 @@ task no_idle_test();
     @(ahb.cb);
     ahb.cb.HWDATA <= 32'h11111111;
 
-    // ---- SECOND TRANSFER (NO IDLE!) ----
+    // ---- SECOND TRANSFER (NO IDLE) ----
     @(ahb.cb);
     ahb.cb.HADDR  <= 16'h0024;
     ahb.cb.HTRANS <= 2'b10; // NONSEQ again
