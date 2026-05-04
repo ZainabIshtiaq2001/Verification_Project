@@ -16,7 +16,7 @@ module tb_top;
   int total_writes = 0;
   int total_reads = 0;
 
-  // 🔥 Verbosity control
+  //  Verbosity control
   bit VERBOSE = 1;
 
   localparam int SINGLE_ITERS = 1000;
@@ -68,7 +68,7 @@ module tb_top;
     return mem_model[addr[11:2]];
   endfunction
 
-  // 🔥 NEW: Scoreboard check + print
+  //  NEW: Scoreboard check + print
   task automatic check_and_print(
       input string txn_type,
       input bit [31:0] addr,
