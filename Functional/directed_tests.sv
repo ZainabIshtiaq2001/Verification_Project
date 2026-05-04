@@ -26,6 +26,9 @@ initial begin
     single_read(16'h0020, 3'b001, 16'hAABB);     // HALFWORD -test5
     single_read(16'h0030, 3'b010, 32'hAABBCCDD); // WORD     -test6
 
+//---- check wait satte
+
+    wait_state_test();
 
 //-----writes in BURST 
 
@@ -42,10 +45,25 @@ initial begin
     burst_write(16'h000C, 3'b010, 3'b010, data4); //wrap4 - b010
     burst_read (16'h000C, 3'b010, 3'b010, data4);
 
+//-----NO IDLE TEST
+    no_idle_test(); //test15
 //----- WRAP8 write and read
     burst_write(16'h0018, 3'b010, 3'b100, data8); //wrap8 - b100
     burst_read (16'h0018, 3'b010, 3'b100, data8);
 
+//----- idle test check and busy
+
+    idle_test(); //test13
+    busy_test(); //test14
+
+//-----WAIT STATE TEST-----
+    wait_state_test(); //test12 - fails
+
+//-----boundary check test 15-----
+    boundary_test(); //test15
+
+//-----alignment check test 16-----
+    alignment_test(); //test16
    #80;
    $finish;
 end
@@ -205,6 +223,7 @@ task burst_write(
     int boundary;
     int base, offset;
     logic [15:0] next_addr;
+    bit wrap_printed;
 
     beats = burst_len(burst);
     incr  = (1 << size);
@@ -239,8 +258,10 @@ task burst_write(
                 // WRAP4 / WRAP8 / WRAP16
                 offset = (offset + incr) % boundary;
                 next_addr = base + offset;
-                if (offset < incr)  // means it wrapped
+                if (!wrap_printed && offset < incr) begin
                     $display("   >>> WRAP OCCURRED <<<");
+                    wrap_printed = 1;
+                end
             end
             else begin
                 // INCR bursts
@@ -276,6 +297,7 @@ task burst_read(
     int incr;
     int boundary;
     int base, offset;
+    bit wrap_printed;
 
     logic [31:0] rdata, val;
     logic [15:0] curr_addr, next_addr;
@@ -312,8 +334,10 @@ task burst_read(
         else begin
             if (burst == 3'b010 || burst == 3'b100 || burst == 3'b110)begin
                 curr_addr = base + offset;
-                if (offset < incr)
+                if (!wrap_printed && offset < incr) begin
                     $display("   >>> WRAP OCCURRED <<<");
+                    wrap_printed = 1;
+            end
             end
                 
             else
@@ -360,6 +384,176 @@ task burst_read(
     @(ahb.cb);
     ahb.cb.HTRANS <= 2'b00;
     ahb.cb.HSEL   <= 0;
+
+endtask
+//-FAILSS
+task wait_state_test();  // TEST 12: WAIT STATE CHECK fails
+
+    logic [15:0] addr_s;
+    logic [1:0]  htrans_s;
+    logic        hwrite_s;
+    logic [2:0]  hsize_s, hburst_s;
+
+    bit wait_seen = 0;
+
+    $display("\n------------------- WAIT STATE TEST -------------------");
+
+    // ADDRESS PHASE
+    @(ahb.cb);
+    ahb.cb.HSEL   <= 1;
+    ahb.cb.HADDR  <= 16'h0010;
+    ahb.cb.HWRITE <= 1;
+    ahb.cb.HTRANS <= 2'b10; // NONSEQ
+    ahb.cb.HSIZE  <= 3'b010;
+    ahb.cb.HBURST <= 3'b000;
+
+    // Save signals
+    addr_s   = ahb.HADDR;
+    htrans_s = ahb.HTRANS;
+    hwrite_s = ahb.HWRITE;
+    hsize_s  = ahb.HSIZE;
+    hburst_s = ahb.HBURST;
+
+    // DATA PHASE
+    @(ahb.cb);
+    ahb.cb.HWDATA <= 32'hAABBCCDD;
+
+    // WAIT LOOP
+    do begin
+        @(ahb.cb);
+
+        if (ahb.HREADYOUT == 0) begin
+            wait_seen = 1;
+
+            // CHECK SIGNAL HOLD
+            if (ahb.HADDR  !== addr_s   ||
+                ahb.HTRANS !== htrans_s ||
+                ahb.HWRITE !== hwrite_s ||
+                ahb.HSIZE  !== hsize_s  ||
+                ahb.HBURST !== hburst_s) begin
+
+                $display("FAIL: Signals changed during WAIT!");
+            end
+        end
+
+    end while (ahb.HREADYOUT == 0);
+
+    // FINAL CHECK
+    if (!wait_seen)
+        $display("FAIL: No wait state observed!");
+    else
+        $display("PASS: Wait state verified");
+
+    // IDLE
+    @(ahb.cb);
+    ahb.cb.HTRANS <= 2'b00;
+    ahb.cb.HSEL   <= 0;
+
+endtask
+
+task idle_test();
+
+    $display("\n------------------- IDLE TEST -------------------");
+
+    @(ahb.cb);
+    ahb.cb.HSEL   <= 1;
+    ahb.cb.HTRANS <= 2'b00; // IDLE
+
+    @(ahb.cb);
+
+    // You just ensure nothing happens
+    if (ahb.HREADYOUT !== 1)
+        $display("FAIL");
+    else
+        $display("PASS: No transfer during IDLE");
+
+endtask
+
+task busy_test();
+
+    $display("\n------------------- BUSY TEST -------------------");
+
+    @(ahb.cb);
+    ahb.cb.HSEL   <= 1;
+    ahb.cb.HTRANS <= 2'b01; // BUSY
+
+    @(ahb.cb);
+
+    $display("PASS: BUSY did not initiate transfer");
+
+endtask
+
+task no_idle_test();
+
+    $display("\n------------------- NO IDLE TEST -------------------");
+
+    // ---- FIRST TRANSFER ----
+    @(ahb.cb);
+    ahb.cb.HSEL   <= 1;
+    ahb.cb.HADDR  <= 16'h0020;
+    ahb.cb.HWRITE <= 1;
+    ahb.cb.HTRANS <= 2'b10; // NONSEQ
+    ahb.cb.HSIZE  <= 3'b010;
+    ahb.cb.HBURST <= 3'b000;
+
+    @(ahb.cb);
+    ahb.cb.HWDATA <= 32'h11111111;
+
+    // ---- SECOND TRANSFER (NO IDLE!) ----
+    @(ahb.cb);
+    ahb.cb.HADDR  <= 16'h0024;
+    ahb.cb.HTRANS <= 2'b10; // NONSEQ again
+    ahb.cb.HWDATA <= 32'h22222222;
+
+    // Wait for completion
+    do @(ahb.cb); while (ahb.HREADYOUT == 0);
+
+    // ---- CHECK ----
+    $display("Checking consecutive writes...");
+
+    if (ahb.HRESP !== 0)
+        $display("FAIL: Response error");
+    else
+        $display("PASS: No-IDLE transfers successful");
+
+    // Back to IDLE
+    @(ahb.cb);
+    ahb.cb.HTRANS <= 2'b00;
+    ahb.cb.HSEL   <= 0;
+
+endtask
+
+//-----boundary check test 15----------
+
+task boundary_test();
+
+    logic [31:0] data4[];
+    data4 = '{32'h11,32'h22,32'h33,32'h44};
+
+    $display("\n------------------- 1KB BOUNDARY TEST -------------------");
+
+    burst_write(16'h03FC, 3'b010, 3'b011, data4); // INCR4
+
+    if (ahb.HRESP != 0)
+        $display("PASS: Boundary violation detected (ERROR response)");
+    else
+        $display("FAIL: Burst crossed 1KB boundary without error");
+
+endtask
+
+task alignment_test();
+
+    logic [31:0] data;
+
+    $display("\n------------------- ALIGNMENT TEST -------------------");
+
+    // WRITE (aligned)
+    single_write(16'h0004, 3'b010, 32'hDEADBEEF);
+
+    // READ BACK
+    single_read (16'h0004, 3'b010, 32'hDEADBEEF);
+
+    $display("PASS: Aligned WORD access successful");
 
 endtask
 endprogram
