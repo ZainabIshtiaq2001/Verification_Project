@@ -125,12 +125,12 @@ module ahb_checker (
     $error("FAIL: HRDATA invalid");
 
   // ============================================================
-  // 7-11. FUNCTIONAL MEMORY CORRECTNESS (SYMBOLIC TRACKING)
+  // 7-11. FUNCTIONAL MEMORY CORRECTNESS 
   // Spec: RAM correctness, Byte Isolation, Readback stability
-  // Requirement: These check the RAM itself, not the protocol.
+  // Requirement: These check the RAM .
   // ============================================================
   
-  // Symbolic address to prevent formal state-space explosion
+ 
   wire [15:0] f_addr;
   assume property ($stable(f_addr));
 
@@ -139,7 +139,7 @@ module ahb_checker (
   logic       trk_write;
   logic [2:0] trk_size;
 
-  // Track the Address Phase for our symbolic address
+  // Track the Address Phase for our address
   always @(posedge HCLK) begin
     if (!HRESETn) begin
       trk_active <= 0;
@@ -159,7 +159,7 @@ module ahb_checker (
   wire write_done      = data_phase_done && trk_write;
   wire read_done       = data_phase_done && !trk_write;
 
-  // Perfect Shadow Memory
+  // Shadow Memory
   logic [31:0] shadow_mem;
   logic        shadow_valid;
 
@@ -182,8 +182,10 @@ module ahb_checker (
         endcase
       end
     end else if (read_done && !shadow_valid) begin
+      
       // Locks initial state to prove #7 (Memory stability)
       // Requirement: No memory location changes without a valid write transaction
+      
       shadow_mem   <= HRDATA;
       shadow_valid <= 1;
     end
@@ -191,6 +193,7 @@ module ahb_checker (
 
   // Covers #8 & #9: Data written must be readable from same address
   // Requirement: Data written to address A must be readable from address A
+    
   property p_memory_correctness;
     (read_done && shadow_valid) |-> (HRDATA == shadow_mem);
   endproperty
